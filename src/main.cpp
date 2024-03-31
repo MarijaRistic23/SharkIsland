@@ -58,6 +58,9 @@ struct ProgramState {
     bool CameraMouseMovementUpdateEnabled = true;
     float sharkScale = 2;
 
+    glm::vec3 boatPosition = glm::vec3(60, 0, 0);
+    float boatScale = 10;
+
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -171,6 +174,10 @@ int main() {
     Model shark2("resources/objects/shark/shark.obj");
     shark2.SetShaderTextureNamePrefix("material.");
 
+    Model boat("resources/objects/boat/boat.obj");
+    boat.SetShaderTextureNamePrefix("material.");
+
+
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
     pointLight.ambient = glm::vec3(100.1, 100.1, 100.1);
@@ -227,6 +234,14 @@ int main() {
         ourShader.setMat4("view", view);
 
         // render the loaded model
+
+        // boat
+        glm::mat4 boatModel = glm::mat4(1.0f);
+        boatModel = glm::translate(boatModel, programState->boatPosition);
+        boatModel = glm::scale(boatModel, glm::vec3(programState->boatScale));
+        boatModel = glm::rotate(boatModel, glm::radians(180.0f), glm::vec3 (.0, 1.0f, 0.0f));
+        ourShader.setMat4("model", boatModel);
+        boat.Draw(ourShader);
 
         // shark1
         glm::mat4 shark1Model = glm::mat4(1.0f);
