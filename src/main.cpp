@@ -61,6 +61,9 @@ struct ProgramState {
     glm::vec3 boatPosition = glm::vec3(60, 0, 0);
     float boatScale = 10;
 
+    glm::vec3 islandPosition = glm::vec3(0, 15, 1000);
+    float islandScale = 0.2;
+
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -177,6 +180,8 @@ int main() {
     Model boat("resources/objects/boat/boat.obj");
     boat.SetShaderTextureNamePrefix("material.");
 
+    Model island("resources/objects/island/obj.obj");
+    island.SetShaderTextureNamePrefix("material.");
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
@@ -242,6 +247,13 @@ int main() {
         boatModel = glm::rotate(boatModel, glm::radians(180.0f), glm::vec3 (.0, 1.0f, 0.0f));
         ourShader.setMat4("model", boatModel);
         boat.Draw(ourShader);
+
+        // island
+        glm::mat4 islandModel = glm::mat4(1.0f);
+        islandModel = glm::translate(islandModel, programState->islandPosition);
+        islandModel = glm::scale(islandModel, glm::vec3(programState->islandScale));
+        ourShader.setMat4("model", islandModel);
+        island.Draw(ourShader);
 
         // shark1
         glm::mat4 shark1Model = glm::mat4(1.0f);
