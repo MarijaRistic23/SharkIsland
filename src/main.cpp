@@ -56,8 +56,14 @@ struct ProgramState {
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 backpackPosition = glm::vec3(0.0f);
-    float backpackScale = 1.0f;
+    float sharkScale = 2;
+
+    glm::vec3 boatPosition = glm::vec3(60, 0, 0);
+    float boatScale = 10;
+
+    glm::vec3 islandPosition = glm::vec3(0, 15, 1000);
+    float islandScale = 0.2;
+
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -137,7 +143,7 @@ int main() {
     }
 
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(false);
 
     programState = new ProgramState;
     programState->LoadFromFile("resources/program_state.txt");
@@ -165,12 +171,21 @@ int main() {
 
     // load models
     // -----------
-    Model ourModel("resources/objects/backpack/backpack.obj");
-    ourModel.SetShaderTextureNamePrefix("material.");
+    Model shark1("resources/objects/shark/shark.obj");
+    shark1.SetShaderTextureNamePrefix("material.");
+
+    Model shark2("resources/objects/shark/shark.obj");
+    shark2.SetShaderTextureNamePrefix("material.");
+
+    Model boat("resources/objects/boat/boat.obj");
+    boat.SetShaderTextureNamePrefix("material.");
+
+    Model island("resources/objects/island/obj.obj");
+    island.SetShaderTextureNamePrefix("material.");
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
-    pointLight.ambient = glm::vec3(0.1, 0.1, 0.1);
+    pointLight.ambient = glm::vec3(100.1, 100.1, 100.1);
     pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
 
@@ -192,6 +207,8 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
         // input
         // -----
         processInput(window);
@@ -204,7 +221,7 @@ int main() {
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
-        pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
+
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
         ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
@@ -216,18 +233,50 @@ int main() {
         ourShader.setFloat("material.shininess", 32.0f);
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
-                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 10000.0f);
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
         // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model,
-                               programState->backpackPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->backpackScale));    // it's a bit too big for our scene, so scale it down
-        ourShader.setMat4("model", model);
-        ourModel.Draw(ourShader);
+
+        // boat
+        glm::mat4 boatModel = glm::mat4(1.0f);
+        boatModel = glm::translate(boatModel, programState->boatPosition);
+        boatModel = glm::scale(boatModel, glm::vec3(programState->boatScale));
+        boatModel = glm::rotate(boatModel, glm::radians(180.0f), glm::vec3 (.0, 1.0f, 0.0f));
+        ourShader.setMat4("model", boatModel);
+        boat.Draw(ourShader);
+
+        // island
+        glm::mat4 islandModel = glm::mat4(1.0f);
+        islandModel = glm::translate(islandModel, programState->islandPosition);
+        islandModel = glm::scale(islandModel, glm::vec3(programState->islandScale));
+        ourShader.setMat4("model", islandModel);
+        island.Draw(ourShader);
+
+        // shark1
+        glm::mat4 shark1Model = glm::mat4(1.0f);
+        glm::vec3 rotationCenter = glm::vec3(60, 0, 0);
+        glm::mat4 translateToOrigin = glm::translate(glm::mat4(1.0f), -rotationCenter);
+        glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), (float) currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 translateBack = glm::translate(glm::mat4(1.0f), rotationCenter);
+        shark1Model = translateBack * rotationMatrix * translateToOrigin;
+        shark1Model = glm::scale(shark1Model, glm::vec3(programState->sharkScale));
+        ourShader.setMat4("model", shark1Model);
+        shark1.Draw(ourShader);
+
+        // shark2
+        glm::mat4 shark2Model = glm::mat4(1.0f);
+        rotationCenter = glm::vec3(60, 0, 0);
+        translateToOrigin = glm::translate(glm::mat4(1.0f), rotationCenter);
+        rotationMatrix = glm::rotate(glm::mat4(1.0f), (float) currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
+        translateBack = glm::translate(glm::mat4(1.0f), rotationCenter);
+        shark2Model = translateBack * rotationMatrix * translateToOrigin;
+        shark2Model = glm::scale(shark2Model, glm::vec3(programState->sharkScale));
+        shark2Model = glm::rotate(shark2Model, glm::radians(180.0f), glm::vec3(0.0f,1.0f,0.0f));
+        ourShader.setMat4("model", shark2Model);
+        shark2.Draw(ourShader);
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
@@ -258,13 +307,13 @@ void processInput(GLFWwindow *window) {
         glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        programState->camera.ProcessKeyboard(FORWARD, deltaTime);
+        programState->camera.ProcessKeyboard(FORWARD, 0.5);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        programState->camera.ProcessKeyboard(BACKWARD, deltaTime);
+        programState->camera.ProcessKeyboard(BACKWARD, 0.5);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        programState->camera.ProcessKeyboard(LEFT, deltaTime);
+        programState->camera.ProcessKeyboard(LEFT, 0.5);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        programState->camera.ProcessKeyboard(RIGHT, deltaTime);
+        programState->camera.ProcessKeyboard(RIGHT, 0.5);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -305,21 +354,6 @@ void DrawImGui(ProgramState *programState) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-
-    {
-        static float f = 0.0f;
-        ImGui::Begin("Hello window");
-        ImGui::Text("Hello text");
-        ImGui::SliderFloat("Float slider", &f, 0.0, 1.0);
-        ImGui::ColorEdit3("Background color", (float *) &programState->clearColor);
-        ImGui::DragFloat3("Backpack position", (float*)&programState->backpackPosition);
-        ImGui::DragFloat("Backpack scale", &programState->backpackScale, 0.05, 0.1, 4.0);
-
-        ImGui::DragFloat("pointLight.constant", &programState->pointLight.constant, 0.05, 0.0, 1.0);
-        ImGui::DragFloat("pointLight.linear", &programState->pointLight.linear, 0.05, 0.0, 1.0);
-        ImGui::DragFloat("pointLight.quadratic", &programState->pointLight.quadratic, 0.05, 0.0, 1.0);
-        ImGui::End();
-    }
 
     {
         ImGui::Begin("Camera info");

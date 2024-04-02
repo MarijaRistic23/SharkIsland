@@ -1,0 +1,38 @@
+# Blender 3.3.0 MTL File: 'Boat.blend'
+# www.blender.org
+
+newmtl Texture1
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd Texture1_Base_Color.JPEG
+map_Ka Texture1_Metallic.JPEG
+map_Ns Texture1_Roughness.jpg
+map_bump -bm 1.000000 Texture1_Normal_DirectX.JPEG
+
+newmtl Texture2
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd Texture2_Base_Color.JPEG
+map_Ka Texture2_Metallic.JPEG
+map_Ns Texture2_Roughness.jpg
+map_bump -bm 1.000000 Texture2_Normal_DirectX.JPEG
+
+newmtl Texture3
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd Texture3_Base_Color.JPEG
+map_Ka Texture3_Metallic.JPEG
+map_Ns Texture3_Roughness.JPEG
+map_bump -bm 1.000000 Texture3_Normal_DirectX.JPEG
