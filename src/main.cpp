@@ -30,6 +30,9 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+bool movementBool = false;
+bool lanternBool = false;
+
 // camera
 
 float lastX = SCR_WIDTH / 2.0f;
@@ -51,6 +54,14 @@ struct PointLight {
     float quadratic;
 };
 
+struct DirLight {
+    glm::vec3 direction;
+
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
     bool ImGuiEnabled = false;
@@ -61,10 +72,15 @@ struct ProgramState {
     glm::vec3 boatPosition = glm::vec3(60, 0, 0);
     float boatScale = 10;
 
-    glm::vec3 islandPosition = glm::vec3(0, 15, 1000);
+    glm::vec3 islandPosition = glm::vec3(0, 15, -1000);
     float islandScale = 0.2;
 
+    glm::vec3 lanternPosition = glm::vec3(64, 10.47, 2.7);
+    float lanternScale = 0.04;
+
     PointLight pointLight;
+    DirLight dirLight;
+
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
 
@@ -183,15 +199,24 @@ int main() {
     Model island("resources/objects/island/obj.obj");
     island.SetShaderTextureNamePrefix("material.");
 
+    Model lantern("resources/objects/lantern/lantern_obj.obj");
+    lantern.SetShaderTextureNamePrefix("material.");
+
     PointLight& pointLight = programState->pointLight;
-    pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
-    pointLight.ambient = glm::vec3(100.1, 100.1, 100.1);
+    pointLight.position = glm::vec3(64, 10.47, 2.7);
+    pointLight.ambient = glm::vec3(0.1, 0.1, 0.1);
     pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
 
-    pointLight.constant = 1.0f;
+    pointLight.constant = 15.0f;
     pointLight.linear = 0.09f;
     pointLight.quadratic = 0.032f;
+
+    DirLight& dirLight = programState->dirLight;
+    dirLight.direction = glm::vec3(-2.0f, -1.0f, 0);
+    dirLight.ambient = glm::vec3(0.35f, 0.35f, 0.35f);
+    dirLight.diffuse = glm::vec3(1, 0.8, 0.1);
+    dirLight.specular = glm::vec3(0.5f, 0.5f, 0.5f);
 
 
 
@@ -229,6 +254,13 @@ int main() {
         ourShader.setFloat("pointLight.constant", pointLight.constant);
         ourShader.setFloat("pointLight.linear", pointLight.linear);
         ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
+
+        // directional light
+        ourShader.setVec3("dirLight.direction", dirLight.direction);
+        ourShader.setVec3("dirLight.ambient", dirLight.ambient);
+        ourShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+        ourShader.setVec3("dirLight.specular", dirLight.specular);
+
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
         // view/projection transformations
@@ -247,6 +279,19 @@ int main() {
         boatModel = glm::rotate(boatModel, glm::radians(180.0f), glm::vec3 (.0, 1.0f, 0.0f));
         ourShader.setMat4("model", boatModel);
         boat.Draw(ourShader);
+
+        // lantern
+        glm::mat4 lanternModel = glm::mat4(1.0f);
+        lanternModel = glm::translate(lanternModel, programState->lanternPosition);
+        lanternModel = glm::scale(lanternModel, glm::vec3(programState->lanternScale));
+        ourShader.setMat4("model", lanternModel);
+        lantern.Draw(ourShader);
+
+        if(lanternBool){
+            pointLight.ambient = glm::vec3(20.0, 20.0, 20.0);
+        }else{
+            pointLight.ambient = glm::vec3(0.0, 0.0, 0.0);
+        }
 
         // island
         glm::mat4 islandModel = glm::mat4(1.0f);
@@ -306,13 +351,13 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && movementBool)
         programState->camera.ProcessKeyboard(FORWARD, 0.5);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && movementBool)
         programState->camera.ProcessKeyboard(BACKWARD, 0.5);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && movementBool)
         programState->camera.ProcessKeyboard(LEFT, 0.5);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && movementBool)
         programState->camera.ProcessKeyboard(RIGHT, 0.5);
 }
 
@@ -378,5 +423,12 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         } else {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
+    }
+
+    if (key == GLFW_KEY_V && action == GLFW_PRESS) {
+        movementBool = !movementBool;
+    }
+    if (key == GLFW_KEY_L && action == GLFW_PRESS) {
+        lanternBool = !lanternBool;
     }
 }
