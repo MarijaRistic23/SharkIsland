@@ -26,12 +26,15 @@ void processInput(GLFWwindow *window);
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
+unsigned int loadTexture(char const * path);
+
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 bool movementBool = false;
 bool lanternBool = false;
+bool binocularsBool = false;
 
 // camera
 
@@ -182,8 +185,10 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     // build and compile shaders
-    // -------------------------
+    // ------------------------- TODO
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
+    Shader binocularsShader("resources/shaders/binoculars.vs", "resources/shaders/binoculars.fs");
+    Shader planeShader("resources/shaders/planeShader.vs", "resources/shaders/planeShader.fs");
 
     // load models
     // -----------
@@ -201,6 +206,74 @@ int main() {
 
     Model lantern("resources/objects/lantern/lantern_obj.obj");
     lantern.SetShaderTextureNamePrefix("material.");
+
+    // binoculars
+    float transparentVertices[] = {
+            0.0f,  0.5f,  0.0f,  0.0f,  1.0f,
+            0.0f, -0.5f,  0.0f,  0.0f,  0.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  0.0f,
+
+            0.0f,  0.5f,  0.0f,  0.0f,  1.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  0.0f,
+            1.0f,  0.5f,  0.0f,  1.0f,  1.0f
+    };
+
+    unsigned int cameraVAO, cameraVBO;
+    glGenVertexArrays(1, &cameraVAO);
+    glGenBuffers(1, &cameraVBO);
+    glBindVertexArray(cameraVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cameraVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    stbi_set_flip_vertically_on_load(true);
+    unsigned int binocularsTexture = loadTexture(FileSystem::getPath("resources/textures/binoculars.png").c_str());
+    binocularsShader.use();
+    binocularsShader.setInt("texture1",0);
+
+
+    // ocean
+    float planeVertices[] = {
+            //      vertex           texture        normal
+            50.0f, -1.0f,  50.0f,  2.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            -50.0f, -1.0f, -50.0f,  0.0f, 2.0f, 0.0f, 1.0f, 0.0f,
+            -50.0f, -1.0f,  50.0f,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+
+
+            50.0f, -1.0f,  50.0f,  2.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            50.0f, -1.0f, -50.0f,  2.0f, 2.0f, 0.0f, 1.0f, 0.0f,
+            -50.0f, -1.0f, -50.0f,  0.0f, 2.0f, 0.0f, 1.0f, 0.0f
+    };
+
+    unsigned int planeVAO, planeVBO;
+    glGenVertexArrays(1, &planeVAO);
+    glGenBuffers(1, &planeVBO);
+
+    glBindVertexArray(planeVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+
+    //load ocean and gold
+    unsigned int oceanTexture = loadTexture("resources/textures/ocean.jpg");
+    planeShader.use();
+    planeShader.setInt("texture1", 0);
+
+    glBindVertexArray(0);
+
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(64, 10.47, 2.7);
@@ -244,6 +317,27 @@ int main() {
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // ocean
+        planeShader.use();
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 view = programState->camera.GetViewMatrix();
+        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+        planeShader.setMat4("view", view);
+        planeShader.setMat4("projection", projection);
+        glBindVertexArray(planeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, oceanTexture);
+        model = glm::translate(model, glm::vec3(0.0f, 103.6f, 0.0f));
+        model = glm::scale(model, glm::vec3(100));
+        planeShader.setMat4("model", model);
+        planeShader.setVec3("dirLight.direction", dirLight.direction);
+        planeShader.setVec3("dirLight.ambient", dirLight.ambient);
+        planeShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+        planeShader.setVec3("dirLight.specular", dirLight.specular);
+        planeShader.setFloat("shininess", 1.0f);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+
         // don't forget to enable shader before setting uniforms
         ourShader.use();
 
@@ -264,9 +358,9 @@ int main() {
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
+        projection = glm::perspective(glm::radians(programState->camera.Zoom),
                                                 (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 10000.0f);
-        glm::mat4 view = programState->camera.GetViewMatrix();
+        view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
@@ -322,6 +416,27 @@ int main() {
         shark2Model = glm::rotate(shark2Model, glm::radians(180.0f), glm::vec3(0.0f,1.0f,0.0f));
         ourShader.setMat4("model", shark2Model);
         shark2.Draw(ourShader);
+
+        // binoculars
+        if(binocularsBool) {
+            binocularsShader.use();
+            programState->camera.Zoom = 20.0f;
+            projection = glm::perspective(glm::radians(programState->camera.Zoom),
+                                          (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 30000.0f);
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(-1.0f,0.0f,-0.5));
+            model = glm::scale(model, glm::vec3(2.0f));
+
+
+            binocularsShader.setMat4("model", model);
+
+            glBindVertexArray(cameraVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, binocularsTexture);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }else{
+            programState->camera.Zoom = 45.0f;
+        }
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
@@ -431,4 +546,44 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_L && action == GLFW_PRESS) {
         lanternBool = !lanternBool;
     }
+    if (key == GLFW_KEY_B && action == GLFW_PRESS) {
+        binocularsBool = !binocularsBool;
+    }
+}
+
+unsigned int loadTexture(char const * path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format = GL_RED;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, (GLint)format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
