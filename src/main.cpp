@@ -37,6 +37,7 @@ const unsigned int SCR_HEIGHT = 600;
 bool movementBool = false;
 bool lanternBool = false;
 bool binocularsBool = false;
+bool chestBool = true;
 
 // camera
 
@@ -192,6 +193,7 @@ int main() {
     Shader binocularsShader("resources/shaders/binoculars.vs", "resources/shaders/binoculars.fs");
     Shader planeShader("resources/shaders/planeShader.vs", "resources/shaders/planeShader.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+    Shader chestShader("resources/shaders/chestShader.vs", "resources/shaders/chestShader.fs");
 
     // load models
     // -----------
@@ -209,6 +211,88 @@ int main() {
 
     Model lantern("resources/objects/lantern/lantern_obj.obj");
     lantern.SetShaderTextureNamePrefix("material.");
+
+    // chest
+    float chestVertices[] = {
+            // back face
+            -1.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+            1.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right
+            1.5f,  1.1f, -0.5f,  1.0f, 1.0f, // top-right
+            1.5f,  1.1f, -0.5f,  1.0f, 1.0f, // top-right
+            -1.5f,  1.1f, -0.5f,  0.0f, 1.0f, // top-left
+            -1.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+            // front face
+            -1.5f, -0.5f,  1.5f,  0.0f, 0.0f, // bottom-left
+            1.5f,  1.1f,  1.5f,  1.0f, 1.0f, // top-right
+            1.5f, -0.5f,  1.5f,  1.0f, 0.0f, // bottom-right
+            1.5f,  1.1f,  1.5f,  1.0f, 1.0f, // top-right
+            -1.5f, -0.5f,  1.5f,  0.0f, 0.0f, // bottom-left
+            -1.5f,  1.1f,  1.5f,  0.0f, 1.0f, // top-left
+            // left face
+            -1.5f,  1.1f,  1.5f,  1.0f, 0.0f, // top-right
+            -1.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+            -1.5f,  1.1f, -0.5f,  1.0f, 1.0f, // top-left
+            -1.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+            -1.5f,  1.1f,  1.5f,  1.0f, 0.0f, // top-right
+            -1.5f, -0.5f,  1.5f,  0.0f, 0.0f, // bottom-right
+            // right face
+            1.5f,  1.1f,  1.5f,  1.0f, 0.0f, // top-left
+            1.5f,  1.1f, -0.5f,  1.0f, 1.0f, // top-right
+            1.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+            1.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+            1.5f, -0.5f,  1.5f,  0.0f, 0.0f, // bottom-left
+            1.5f,  1.1f,  1.5f,  1.0f, 0.0f, // top-left
+            // bottom face
+            -1.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+            1.5f, -0.5f,  1.5f,  1.0f, 0.0f, // bottom-left
+            1.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
+            1.5f, -0.5f,  1.5f,  1.0f, 0.0f, // bottom-left
+            -1.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+            -1.5f, -0.5f,  1.5f,  0.0f, 0.0f, // bottom-right
+            // top face
+            -1.5f,  1.1f, -0.5f,  0.0f, 1.0f, // top-left
+            1.5f,  1.1f, -0.5f,  1.0f, 1.0f, // top-right
+            1.5f,  1.1f,  1.5f,  1.0f, 0.0f, // bottom-right
+            1.5f,  1.1f,  1.5f,  1.0f, 0.0f, // bottom-right
+            -1.5f,  1.1f,  1.5f,  0.0f, 0.0f, // bottom-left
+            -1.5f,  1.1f, -0.5f,  0.0f, 1.0f  // top-left
+    };
+    float transparentChestVertices[] = {
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+            1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
+    unsigned int chestVAO, chestVBO;
+    glGenVertexArrays(1, &chestVAO);
+    glGenBuffers(1, &chestVBO);
+    glBindVertexArray(chestVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, chestVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(chestVertices), &chestVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    unsigned int transparentChestVAO, transparentChestVBO;
+    glGenVertexArrays(1, &transparentChestVAO);
+    glGenBuffers(1, &transparentChestVBO);
+    glBindVertexArray(transparentChestVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentChestVAO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentChestVertices), transparentChestVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    // load chest texture
+    unsigned int chestTexture = loadTexture(FileSystem::getPath("resources/textures/chest.jpg").c_str());
+
 
     // binoculars
     float transparentVertices[] = {
@@ -272,6 +356,7 @@ int main() {
 
     //load ocean and gold
     unsigned int oceanTexture = loadTexture("resources/textures/ocean.jpg");
+    unsigned int goldTexture = loadTexture("resources/textures/gold.jpg");
     planeShader.use();
     planeShader.setInt("texture1", 0);
 
@@ -409,6 +494,21 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
 
+        //gold
+        glBindVertexArray(planeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, goldTexture);
+        model = glm::translate(model, glm::vec3(0.6f, -0.965, -0.214f));
+        model = glm::scale(model, glm::vec3(0.00065,0.00043,0.00043));
+        planeShader.setMat4("model", model);
+        planeShader.setVec3("dirLight.direction", dirLight.direction);
+        planeShader.setVec3("dirLight.ambient", dirLight.ambient);
+        planeShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+        planeShader.setVec3("dirLight.specular", dirLight.specular);
+        planeShader.setFloat("shininess", 1.0f);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+
         // don't forget to enable shader before setting uniforms
         ourShader.use();
 
@@ -487,6 +587,42 @@ int main() {
         shark2Model = glm::rotate(shark2Model, glm::radians(180.0f), glm::vec3(0.0f,1.0f,0.0f));
         ourShader.setMat4("model", shark2Model);
         shark2.Draw(ourShader);
+
+        // chest
+        chestShader.use();
+        if(chestBool) {
+            model = glm::mat4(1.0f);
+            chestShader.setMat4("projection", projection);
+            chestShader.setMat4("view", view);
+            glad_glFrontFace(GL_CW);
+            glEnable(GL_CULL_FACE);
+            glBindVertexArray(chestVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, chestTexture);
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(60, 5.5, -22.5));
+            model = glm::scale(model, glm::vec3(2.2f));
+            binocularsShader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glDisable(GL_CULL_FACE);
+        }else{
+            // Render the chest without its top face
+            model = glm::mat4(1.0f);
+            chestShader.setMat4("projection", projection);
+            chestShader.setMat4("view", view);
+            glBindVertexArray(chestVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, chestTexture);
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(60, 5.5, -22.5));
+            model = glm::scale(model, glm::vec3(2.2f));
+
+            // Render all faces except the top face
+            chestShader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 30); // Render all faces except the top face
+            glDrawArrays(GL_TRIANGLES, 36, 30); // Skip rendering the top face
+            glDrawArrays(GL_TRIANGLES, 72, 6); // Render the bottom face (6 vertices)
+        }
 
         // binoculars
         if(binocularsBool) {
@@ -634,6 +770,9 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     }
     if (key == GLFW_KEY_B && action == GLFW_PRESS) {
         binocularsBool = !binocularsBool;
+    }
+    if (key == GLFW_KEY_C && action == GLFW_PRESS) {
+        chestBool = !chestBool;
     }
 }
 
