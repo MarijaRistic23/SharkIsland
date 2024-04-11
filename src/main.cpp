@@ -83,7 +83,7 @@ struct ProgramState {
     glm::vec3 boatPosition = glm::vec3(60, 0, 0);
     float boatScale = 10;
 
-    glm::vec3 islandPosition = glm::vec3(0, 15, -1000);
+    glm::vec3 islandPosition = glm::vec3(0, 15, 2000);
     float islandScale = 0.2;
 
     glm::vec3 lanternPosition = glm::vec3(64, 10.47, 2.7);
@@ -148,7 +148,7 @@ int main() {
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SharkIsland", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
