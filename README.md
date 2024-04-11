@@ -17,4 +17,4 @@
 - 'P' - disable bloom effects
 
 ## Video:
-[link]()
+[link](https://youtu.be/lrAdHRIF4ZA?si=T-v8xwStreRMFTdd)
